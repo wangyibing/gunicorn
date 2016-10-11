@@ -39,13 +39,18 @@ class Arbiter(object):
     START_CTX = {}
 
     LISTENERS = []
+    # key: pid, value: Worker对象
     WORKERS = {}
     PIPE = []
 
     # I love dynamic languages
+    # 信号队列
     SIG_QUEUE = []
+
+    # 所有合法的信号
     SIGNALS = [getattr(signal, "SIG%s" % x)
                for x in "HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH".split()]
+    # key:信号的值, value: 信号的名字
     SIG_NAMES = dict(
         (getattr(signal, name), name[3:].lower()) for name in dir(signal)
         if name[:3] == "SIG" and name[3] != "_"
@@ -88,6 +93,7 @@ class Arbiter(object):
     num_workers = property(_get_num_workers, _set_num_workers)
 
     def setup(self, app):
+        # 主进程维持了对app的引用
         self.app = app
         self.cfg = app.cfg
 
@@ -183,14 +189,19 @@ class Arbiter(object):
     def run(self):
         "Main master loop."
         self.start()
+        # 设置主进程的名字
+        # 要求先安装 setproctitle 模块
         util._setproctitle("master [%s]" % self.proc_name)
 
         try:
+            # 管理工作者进程数
             self.manage_workers()
 
+            # 循环
             while True:
                 self.maybe_promote_master()
 
+                # 从信号队列中取出新的信号
                 sig = self.SIG_QUEUE.pop(0) if len(self.SIG_QUEUE) else None
                 if sig is None:
                     self.sleep()
@@ -203,6 +214,7 @@ class Arbiter(object):
                     continue
 
                 signame = self.SIG_NAMES.get(sig)
+                # 取出信号对应的处理器
                 handler = getattr(self, "handle_%s" % signame, None)
                 if not handler:
                     self.log.error("Unhandled signal: %s", signame)
@@ -300,6 +312,8 @@ class Arbiter(object):
             self.log.debug("SIGWINCH ignored. Not daemonized")
 
     def maybe_promote_master(self):
+        """也许要发起一个主进程
+        """
         if self.master_pid == 0:
             return
 
@@ -521,6 +535,8 @@ class Arbiter(object):
         as required.
         """
         if len(self.WORKERS.keys()) < self.num_workers:
+            # 工作者进程少于配置参数
+            # 创建新的
             self.spawn_workers()
 
         workers = self.WORKERS.items()
@@ -538,13 +554,17 @@ class Arbiter(object):
                                   "mtype": "gauge"})
 
     def spawn_worker(self):
+        """fork工作者进程
+        """
         self.worker_age += 1
+        # 根据指定的worker_class参数,决定创建什么样的Worker
         worker = self.worker_class(self.worker_age, self.pid, self.LISTENERS,
                                    self.app, self.timeout / 2.0,
                                    self.cfg, self.log)
         self.cfg.pre_fork(self, worker)
         pid = os.fork()
         if pid != 0:
+            # 保存起来
             self.WORKERS[pid] = worker
             return pid
 
@@ -582,6 +602,8 @@ class Arbiter(object):
         """\
         Spawn new workers as needed.
 
+        大量生产workers
+
         This is where a worker process leaves the main loop
         of the master process.
         """
@@ -609,6 +631,7 @@ class Arbiter(object):
         try:
             os.kill(pid, sig)
         except OSError as e:
+            # No such process
             if e.errno == errno.ESRCH:
                 try:
                     worker = self.WORKERS.pop(pid)
@@ -617,4 +640,5 @@ class Arbiter(object):
                     return
                 except (KeyError, OSError):
                     return
+            # 继续抛出异常
             raise

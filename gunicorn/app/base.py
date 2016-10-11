@@ -20,9 +20,12 @@ class BaseApplication(object):
     the various necessities for any given web framework.
     """
     def __init__(self, usage=None, prog=None):
+        # usage是?
         self.usage = usage
+        # cfg 是个config对象
         self.cfg = None
         self.callable = None
+        # 程序名称
         self.prog = prog
         self.logger = None
         self.do_load_config()
@@ -69,6 +72,7 @@ class BaseApplication(object):
 
     def run(self):
         try:
+            # 主进程
             Arbiter(self).run()
         except RuntimeError as e:
             print("\nError: %s\n" % e, file=sys.stderr)
@@ -78,6 +82,8 @@ class BaseApplication(object):
 class Application(BaseApplication):
 
     def get_config_from_filename(self, filename):
+        """从filename指定的文件中获取配置
+        """
 
         if not os.path.exists(filename):
             raise RuntimeError("%r doesn't exist" % filename)
@@ -90,6 +96,7 @@ class Application(BaseApplication):
             "__package__": None
         }
         try:
+            # 执行一个文件
             execfile_(filename, cfg, cfg)
         except Exception:
             print("Failed to read config file: %s" % filename, file=sys.stderr)
@@ -118,6 +125,7 @@ class Application(BaseApplication):
                 filename = location
             cfg = self.get_config_from_filename(filename)
 
+        # cfg is a dict
         for k, v in cfg.items():
             # Ignore unknown names
             if k not in self.cfg.settings:
@@ -164,24 +172,34 @@ class Application(BaseApplication):
             self.cfg.set(k.lower(), v)
 
     def run(self):
+        # 配置校验无误
         if self.cfg.check_config:
             try:
+                # 加载配置
                 self.load()
             except:
                 msg = "\nError while loading the application:\n"
                 print(msg, file=sys.stderr)
+                # 打印异常信息
                 traceback.print_exc()
+                # 清空标准错误信息
                 sys.stderr.flush()
                 sys.exit(1)
             sys.exit(0)
 
         if self.cfg.spew:
+            # 打开了--spew开关
+            # Install a trace function that spews every line
+            # executed by the server.
             debug.spew()
 
         if self.cfg.daemon:
+            # run in daemon mode
             util.daemonize(self.cfg.enable_stdio_inheritance)
 
         # set python paths
+        # A comma-separated list of directories to
+        # add to the Python path
         if self.cfg.pythonpath and self.cfg.pythonpath is not None:
             paths = self.cfg.pythonpath.split(",")
             for path in paths:
@@ -189,4 +207,5 @@ class Application(BaseApplication):
                 if pythonpath not in sys.path:
                     sys.path.insert(0, pythonpath)
 
+        # 运行入口
         super(Application, self).run()

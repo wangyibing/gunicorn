@@ -40,13 +40,16 @@ class Worker(object):
         self.age = age
         self.ppid = ppid
         self.sockets = sockets
+        # 应用对象
         self.app = app
         self.timeout = timeout
         self.cfg = cfg
+        # 该工作者进程是否已经启动
         self.booted = False
         self.aborted = False
         self.reloader = None
 
+        # number of requests received
         self.nr = 0
         jitter = randint(0, cfg.max_requests_jitter)
         self.max_requests = cfg.max_requests + jitter or MAXSIZE
@@ -130,6 +133,7 @@ class Worker(object):
 
         # Enter main run loop
         self.booted = True
+        # Worker运行
         self.run()
 
     def load_wsgi(self):

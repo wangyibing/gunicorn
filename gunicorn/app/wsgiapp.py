@@ -12,6 +12,8 @@ from gunicorn import util
 
 
 class WSGIApplication(Application):
+    """需要注意Application类
+    """
     def init(self, parser, opts, args):
         if opts.paste and opts.paste is not None:
             app_name = 'main'
@@ -59,6 +61,9 @@ class WSGIApplication(Application):
         return load_pasteapp(self.cfgurl, self.relpath, global_conf=self.cfg.paste_global_conf)
 
     def load(self):
+        """在run()中调用
+        """
+        # 判断是不是Paste应用
         if self.cfg.paste is not None:
             return self.load_pasteapp()
         else:
@@ -71,8 +76,12 @@ def run():
     generic WSGI applications.
     """
     from gunicorn.app.wsgiapp import WSGIApplication
+    # 在父类中定义了run()
     WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]").run()
 
 
 if __name__ == '__main__':
+    # 程序入口
+    # import pdb
+    # pdb.set_trace()
     run()

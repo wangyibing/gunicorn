@@ -24,7 +24,14 @@ class StopWaiting(Exception):
 class SyncWorker(base.Worker):
 
     def accept(self, listener):
+        """listner -- a socket obj
+        """
+        # Wait for an incoming connection.  Return a new
+        # socket representing the connection, and the address
+        # of the client.  For IP sockets, the address
+        # info is a pair (hostaddr, port).
         client, addr = listener.accept()
+        # set or clear the blocking I/O flag
         client.setblocking(1)
         util.close_on_exec(client)
         self.handle(listener, client, addr)
@@ -32,6 +39,7 @@ class SyncWorker(base.Worker):
     def wait(self, timeout):
         try:
             self.notify()
+            # based on `select`
             ret = select.select(self.wait_fds, [], [], timeout)
             if ret[0]:
                 if self.PIPE[0] in ret[0]:
@@ -132,6 +140,7 @@ class SyncWorker(base.Worker):
 
             parser = http.RequestParser(self.cfg, client)
             req = six.next(parser)
+            # 处理请求
             self.handle_request(listener, req, client, addr)
         except http.errors.NoMoreData as e:
             self.log.debug("Ignored premature client disconnection. %s", e)
@@ -143,6 +152,7 @@ class SyncWorker(base.Worker):
                 client.close()
             else:
                 self.log.debug("Error processing SSL request.")
+                # 处理错误
                 self.handle_error(req, client, addr, e)
         except EnvironmentError as e:
             if e.errno not in (errno.EPIPE, errno.ECONNRESET):
@@ -161,6 +171,7 @@ class SyncWorker(base.Worker):
         environ = {}
         resp = None
         try:
+            # 预处理请求
             self.cfg.pre_request(self, req)
             request_start = datetime.now()
             resp, environ = wsgi.create(req, client, addr,
@@ -170,11 +181,15 @@ class SyncWorker(base.Worker):
             # the backend.
             resp.force_close()
             self.nr += 1
+            """`max_requests` -- The maximum number of requests a worker
+                                 will process before restarting.
+            """
             if self.nr >= self.max_requests:
                 self.log.info("Autorestarting worker after current request.")
                 self.alive = False
             respiter = self.wsgi(environ, resp.start_response)
             try:
+                # 输出响应
                 if isinstance(respiter, environ['wsgi.file_wrapper']):
                     resp.write_file(respiter)
                 else:

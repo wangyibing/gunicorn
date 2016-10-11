@@ -36,9 +36,12 @@ def wrap_method(func):
 
 
 def make_settings(ignore=None):
+    """返回一个配置字典: key是参数名,value是参数对象
+    """
     settings = {}
     ignore = ignore or ()
     for s in KNOWN_SETTINGS:
+        # 实例化对象
         setting = s()
         if setting.name in ignore:
             continue
@@ -49,14 +52,19 @@ def make_settings(ignore=None):
 class Config(object):
 
     def __init__(self, usage=None, prog=None):
+        # a dict
         self.settings = make_settings()
         self.usage = usage
+        # prog 指的是 gunicorn命令
+        # command line arguments;
+        # argv[0] is the script pathname if known
         self.prog = prog or os.path.basename(sys.argv[0])
         self.env_orig = os.environ.copy()
 
     def __getattr__(self, name):
         if name not in self.settings:
             raise AttributeError("No configuration setting for: %s" % name)
+        # 返回配置对象
         return self.settings[name].get()
 
     def __setattr__(self, name, value):
@@ -227,6 +235,7 @@ class Config(object):
 class SettingMeta(type):
     def __new__(cls, name, bases, attrs):
         super_new = super(SettingMeta, cls).__new__
+        # 筛选配置项子类
         parents = [b for b in bases if isinstance(b, SettingMeta)]
         if not parents:
             return super_new(cls, name, bases, attrs)
@@ -236,6 +245,7 @@ class SettingMeta(type):
 
         new_class = super_new(cls, name, bases, attrs)
         new_class.fmt_desc(attrs.get("desc", ""))
+        # 填充 已知的配置项
         KNOWN_SETTINGS.append(new_class)
         return new_class
 
@@ -310,6 +320,7 @@ class Setting(object):
                 self.order < other.order)
     __cmp__ = __lt__
 
+# 类名,父类,属性字典
 Setting = SettingMeta('Setting', (Setting,), {})
 
 
@@ -336,6 +347,8 @@ def validate_dict(val):
 
 
 def validate_pos_int(val):
+    """positive integer
+    """
     if not isinstance(val, six.integer_types):
         val = int(val, 0)
     else:
@@ -572,6 +585,7 @@ class Workers(Setting):
     meta = "INT"
     validator = validate_pos_int
     type = int
+    # 并发量
     default = int(os.environ.get("WEB_CONCURRENCY", 1))
     desc = """\
         The number of worker processes for handling requests.
