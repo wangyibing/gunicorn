@@ -73,6 +73,7 @@ class Arbiter(object):
 
         cwd = util.getcwd()
 
+        # args 包含了命令行参数等
         args = sys.argv[:]
         args.insert(0, sys.executable)
 
@@ -80,7 +81,8 @@ class Arbiter(object):
         self.START_CTX = {
             "args": args,
             "cwd": cwd,
-            0: sys.executable
+            # 可执行命令,比如:python, gunicorn等
+            0: sys.executabl
         }
 
     def _get_num_workers(self):
@@ -564,7 +566,8 @@ class Arbiter(object):
         self.cfg.pre_fork(self, worker)
         pid = os.fork()
         if pid != 0:
-            # 保存起来
+            # 父进程，返回后继续创建其他worker，
+            # 没worker后进入到自己的消息循环
             self.WORKERS[pid] = worker
             return pid
 
@@ -574,6 +577,7 @@ class Arbiter(object):
             util._setproctitle("worker [%s]" % self.proc_name)
             self.log.info("Booting worker with pid: %s", worker_pid)
             self.cfg.post_fork(self, worker)
+            # 初始化子进程
             worker.init_process()
             sys.exit(0)
         except SystemExit:

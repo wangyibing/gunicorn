@@ -82,6 +82,4 @@ def run():
 
 if __name__ == '__main__':
     # 程序入口
-    # import pdb
-    # pdb.set_trace()
     run()
