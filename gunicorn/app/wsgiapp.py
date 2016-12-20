@@ -37,6 +37,7 @@ class WSGIApplication(Application):
             parser.error("No application module specified.")
 
         self.cfg.set("default_proc_name", args[0])
+        # app 对象的路径
         self.app_uri = args[0]
 
     def chdir(self):
@@ -51,6 +52,7 @@ class WSGIApplication(Application):
         self.chdir()
 
         # load the app
+        # 返回Flask app对象
         return util.import_app(self.app_uri)
 
     def load_pasteapp(self):

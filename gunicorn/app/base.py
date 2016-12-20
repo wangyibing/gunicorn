@@ -67,6 +67,7 @@ class BaseApplication(object):
 
     def wsgi(self):
         if self.callable is None:
+            # 返回app对象
             self.callable = self.load()
         return self.callable
 
@@ -175,7 +176,7 @@ class Application(BaseApplication):
         # 配置校验无误
         if self.cfg.check_config:
             try:
-                # 加载配置
+                # 加载app实例对象
                 self.load()
             except:
                 msg = "\nError while loading the application:\n"

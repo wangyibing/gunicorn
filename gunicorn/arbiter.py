@@ -82,7 +82,7 @@ class Arbiter(object):
             "args": args,
             "cwd": cwd,
             # 可执行命令,比如:python, gunicorn等
-            0: sys.executabl
+            0: sys.executable
         }
 
     def _get_num_workers(self):
@@ -212,6 +212,7 @@ class Arbiter(object):
                     continue
 
                 if sig not in self.SIG_NAMES:
+                    # 只是记录一下
                     self.log.info("Ignoring unknown signal: %s", sig)
                     continue
 
@@ -314,8 +315,6 @@ class Arbiter(object):
             self.log.debug("SIGWINCH ignored. Not daemonized")
 
     def maybe_promote_master(self):
-        """也许要发起一个主进程
-        """
         if self.master_pid == 0:
             return
 
@@ -504,7 +503,7 @@ class Arbiter(object):
 
     def reap_workers(self):
         """\
-        Reap workers to avoid zombie processes
+        Reap(收割,这里指的是收回) workers to avoid zombie processes
         """
         try:
             while True:

@@ -187,6 +187,7 @@ class SyncWorker(base.Worker):
             if self.nr >= self.max_requests:
                 self.log.info("Autorestarting worker after current request.")
                 self.alive = False
+            # 去调用应用的wsgi_app()方法
             respiter = self.wsgi(environ, resp.start_response)
             try:
                 # 输出响应
