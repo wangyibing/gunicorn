@@ -164,6 +164,8 @@ class Request(Message):
         self.get_data(unreader, buf, stop=True)
 
         # get request line
+        # line = 'GET / HTTP/1.1'
+        # rbuf = 'Host: localhost:8000\r\nUser-Agent: curl/7.47.0\r\nAccept: */*\r\n\r\n'
         line, rbuf = self.read_line(unreader, buf, self.limit_request_line)
 
         # proxy protocol
@@ -302,6 +304,9 @@ class Request(Message):
         }
 
     def parse_request_line(self, line):
+        # 获取协议头
+        # line = 'GET / HTTP/1.1'
+        # ['GET', '/', 'HTTP/1.1']
         bits = line.split(None, 2)
         if len(bits) != 3:
             raise InvalidRequestLine(line)

@@ -37,6 +37,7 @@ class Worker(object):
         current process. If there's a need to make process wide
         changes you'll want to do that in ``self.init_process()``.
         """
+        # arbiter的worker_age
         self.age = age
         self.ppid = ppid
         self.sockets = sockets

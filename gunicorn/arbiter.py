@@ -41,6 +41,7 @@ class Arbiter(object):
     LISTENERS = []
     # key: pid, value: Worker对象
     WORKERS = {}
+    # [r, w]
     PIPE = []
 
     # I love dynamic languages
@@ -315,6 +316,8 @@ class Arbiter(object):
             self.log.debug("SIGWINCH ignored. Not daemonized")
 
     def maybe_promote_master(self):
+        """可能要升级主进程
+        """
         if self.master_pid == 0:
             return
 
@@ -565,8 +568,7 @@ class Arbiter(object):
         self.cfg.pre_fork(self, worker)
         pid = os.fork()
         if pid != 0:
-            # 父进程，返回后继续创建其他worker，
-            # 没worker后进入到自己的消息循环
+            # 父进程，返回后继续创建其他worker
             self.WORKERS[pid] = worker
             return pid
 
